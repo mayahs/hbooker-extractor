@@ -85,7 +85,7 @@ export default {
         para: {
           login_token: this.loginToken,
           account: this.account,
-          count: 999,
+          count: 9999,
           shelf_id: shelfId,
           page: 0,
           order: 'last_read_time'

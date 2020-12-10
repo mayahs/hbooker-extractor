@@ -42,11 +42,11 @@ var getChapter = async function(chapter, i, length) {
       let decryptContent = decrypt(contentText, key)
       bookOutOfOrder[i] = contentTitle + '\n' + decryptContent + '\n\n\n'
     } else {
-      throw new Error('Failed to get chapter info')
+      //throw new Error('Failed to get chapter info')
     }
   } catch (e) {
     bookOutOfOrder[i] = 'download failed\n'
-    console.error(e)
+    console.error(e + ' download failed:' + chapterNum + '\n')
   }
   chapterNum++
   self.postMessage({ msg: 'chapter_complete', content: chapterNum })
