@@ -7,14 +7,20 @@ const mixin = {
   withCredentials: false //跨域请求是否使用凭证
 }
 const para = {
-  app_version: '2.3.020',
-  device_token: 'ciweimao_powered_by_zsakvo_with_vue'
+  app_version: '2.7.017',
+  device_token: '282aae5d52978299134078ed2702ea16ddfbd20810d6fb019353c6014ad773e4'
 }
 var loginToken
 var account
 var book = ''
 var bookOutOfOrder = []
 var chapterNum = 0
+var firstNum = 0
+
+//function setChapterNum(num) {
+//  this.chapterNum = this.chapterNum + num;
+//}
+
 // 响应父线程的消息
 self.addEventListener('message', async event => {
   let cmd = event.data.cmd
@@ -23,10 +29,21 @@ self.addEventListener('message', async event => {
   account = event.data.account
   switch (cmd) {
     case 'begin':
-      for (let i = 0; i < para.length; i++) {
-        const chapter = para[i]
-        getChapter(chapter, i, para.length)
-      }
+	  {
+	    for (let i = 0; i < para.length; i++) {
+		  const chapter = para[i]
+		  getChapter(chapter, i, para.length)
+	    }
+	  }
+      break
+	  
+	case 'stop':
+	  {
+        for (let ii = 0; ii < length; ii++) {
+          book += bookOutOfOrder[ii]
+        }
+        self.postMessage({ msg: 'all_complete', content: book })
+	  }
       break
   }
 })
@@ -47,6 +64,10 @@ var getChapter = async function(chapter, i, length) {
   } catch (e) {
     bookOutOfOrder[i] = 'download failed\n'
     console.error(e + ' download failed:' + chapterNum + '\n')
+    if (firstNum === 0) {
+      firstNum = 1
+      chapterNum++
+    }
   }
   chapterNum++
   self.postMessage({ msg: 'chapter_complete', content: chapterNum })

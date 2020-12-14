@@ -8,8 +8,8 @@ const mixin = {
 }
 
 const para = {
-  app_version: '2.3.020',
-  device_token: 'ciweimao_powered_by_zsakvo_with_vue'
+  app_version: '2.7.017',
+  device_token: '282aae5d52978299134078ed2702ea16ddfbd20810d6fb019353c6014ad773e4'
 }
 
 axios.interceptors.response.use(

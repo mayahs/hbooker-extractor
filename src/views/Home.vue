@@ -10,6 +10,7 @@
       </div>
       <div slot="footer">
         <at-button type="primary" :disabled="!canDl" @click="dlBook">{{ dlButton }}</at-button>
+        <at-button type="primary" :disabled="canDl" @click="stopBook">{{ stopButton }}</at-button>
       </div>
     </at-modal>
     <div class="nav-wrapper">
@@ -45,6 +46,8 @@
 <script>
 // @ is an alias to /src
 import GBWorker from 'worker-loader!../work/gb.work'
+
+var firstNum = 0
 
 export default {
   name: 'home',
@@ -123,6 +126,7 @@ export default {
       chapterNum: 0,
       dlProgressText: '',
       dlButton: '',
+      stopButton: '',
       canDl: false,
       dlUrl: '',
       columns: [
@@ -234,11 +238,13 @@ export default {
       let that = this
       that.canDl = false
       that.dlButton = '请稍后'
+      that.stopButton = '停止'
       this.chapterNum = 0
       this.dlName = book.book_info.book_name
       that.chapterNum = 0
       that.dlProgressText = ''
       this.modal = true
+      firstNum = 0
       //获取书籍 ID
       let bid = book.book_info.book_id
       //获取分卷 ID （全部）
@@ -264,7 +270,14 @@ export default {
         let content = evt.data.content
         switch (msg) {
           case 'chapter_complete':
-            that.dlProgressText = `${content}/${that.chapterNum}`
+            {
+              that.dlButton = '下载中'
+              if (firstNum === 1) {
+                firstNum = 0
+                worker.chapterNum++
+              }
+              that.dlProgressText = `${content}/${that.chapterNum}`
+            }
             break
           case 'all_complete':
             var blob = new Blob([content])
@@ -296,8 +309,8 @@ export default {
       params.append('login_token', this.loginToken)
       params.append('account', this.account)
       params.append('division_id', did)
-      params.append('app_version', '2.3.020')
-      params.append('device_token', 'ciweimao_powered_by_zsakvo_with_vue')
+      params.append('app_version', '2.7.017')
+      params.append('device_token', '282aae5d52978299134078ed2702ea16ddfbd20810d6fb019353c6014ad773e4')
       return await this.$post({
         url: '/chapter/get_updated_chapter_by_division_id',
         header: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -320,6 +333,9 @@ export default {
       document.body.appendChild(eleLink)
       eleLink.click()
       document.body.removeChild(eleLink)
+    },
+    stopBook() {
+      firstNum = 1
     }
   }
 }
