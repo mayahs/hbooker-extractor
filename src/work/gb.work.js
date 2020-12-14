@@ -15,7 +15,8 @@ var account
 var book = ''
 var bookOutOfOrder = []
 var chapterNum = 0
-var firstNum = 0
+//var firstNum = 0
+var chapterLength = 0
 
 //function setChapterNum(num) {
 //  this.chapterNum = this.chapterNum + num;
@@ -29,21 +30,21 @@ self.addEventListener('message', async event => {
   account = event.data.account
   switch (cmd) {
     case 'begin':
-	  {
-	    for (let i = 0; i < para.length; i++) {
-		  const chapter = para[i]
-		  getChapter(chapter, i, para.length)
-	    }
-	  }
+      {
+        for (let i = 0; i < para.length; i++) {
+          const chapter = para[i]
+          getChapter(chapter, i, para.length)
+        }
+        chapterLength = para.length
+      }
       break
-	  
-	case 'stop':
-	  {
-        for (let ii = 0; ii < length; ii++) {
+    case 'stop':
+      {
+        for (let ii = 0; ii < chapterLength; ii++) {
           book += bookOutOfOrder[ii]
         }
         self.postMessage({ msg: 'all_complete', content: book })
-	  }
+      }
       break
   }
 })
@@ -62,20 +63,21 @@ var getChapter = async function(chapter, i, length) {
       //throw new Error('Failed to get chapter info')
     }
   } catch (e) {
-    bookOutOfOrder[i] = 'download failed\n'
+    bookOutOfOrder[i] = '\n章节读取失败\n\n\n'
     console.error(e + ' download failed:' + chapterNum + '\n')
-    if (firstNum === 0) {
-      firstNum = 1
-      chapterNum++
+    // if (firstNum === 0) {
+    //   firstNum = 1
+    //   chapterNum++
+    // }
+  } finally {
+    chapterNum++
+    self.postMessage({ msg: 'chapter_complete', content: chapterNum })
+    if (chapterNum === length) {
+      for (let ii = 0; ii < length; ii++) {
+        book += bookOutOfOrder[ii]
+      }
+      self.postMessage({ msg: 'all_complete', content: book })
     }
-  }
-  chapterNum++
-  self.postMessage({ msg: 'chapter_complete', content: chapterNum })
-  if (chapterNum === length) {
-    for (let ii = 0; ii < length; ii++) {
-      book += bookOutOfOrder[ii]
-    }
-    self.postMessage({ msg: 'all_complete', content: book })
   }
 }
 

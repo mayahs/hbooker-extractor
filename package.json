@@ -19,6 +19,7 @@
     "koa-bodyparser": "^4.2.1",
     "koa2-connect": "^1.0.2",
     "koa2-cors": "^2.0.6",
+    "node-static": "^0.7.11",
     "stylus": "^0.54.7",
     "stylus-loader": "^3.0.2",
     "vue": "^2.6.10",

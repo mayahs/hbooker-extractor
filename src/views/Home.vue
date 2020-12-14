@@ -47,7 +47,8 @@
 // @ is an alias to /src
 import GBWorker from 'worker-loader!../work/gb.work'
 
-var firstNum = 0
+//var firstNum = 0
+var worker
 
 export default {
   name: 'home',
@@ -244,7 +245,7 @@ export default {
       that.chapterNum = 0
       that.dlProgressText = ''
       this.modal = true
-      firstNum = 0
+      //firstNum = 0
       //获取书籍 ID
       let bid = book.book_info.book_id
       //获取分卷 ID （全部）
@@ -258,7 +259,7 @@ export default {
         allCahpters.push(...chapters)
       }
       that.chapterNum = allCahpters.length
-      var worker = new GBWorker()
+      worker = new GBWorker()
       worker.postMessage({
         cmd: 'begin',
         loginToken: this.loginToken,
@@ -271,11 +272,11 @@ export default {
         switch (msg) {
           case 'chapter_complete':
             {
-              that.dlButton = '下载中'
-              if (firstNum === 1) {
-                firstNum = 0
-                worker.chapterNum++
-              }
+              that.dlButton = '获取中'
+              // if (firstNum === 1) {
+              //   firstNum = 0
+              //   worker.chapterNum++
+              // }
               that.dlProgressText = `${content}/${that.chapterNum}`
             }
             break
@@ -335,7 +336,12 @@ export default {
       document.body.removeChild(eleLink)
     },
     stopBook() {
-      firstNum = 1
+      //firstNum = 1
+      worker.postMessage({
+        cmd: 'stop',
+        loginToken: this.loginToken,
+        account: this.account
+      })
     }
   }
 }
