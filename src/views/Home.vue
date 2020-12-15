@@ -9,6 +9,7 @@
         </div>
       </div>
       <div slot="footer">
+        <p>{{ timeoutText }}</p>
         <at-button type="primary" :disabled="!canDl" @click="dlBook">{{ dlButton }}</at-button>
         <at-button type="primary" :disabled="canDl" @click="stopBook">{{ stopButton }}</at-button>
       </div>
@@ -47,8 +48,42 @@
 // @ is an alias to /src
 import GBWorker from 'worker-loader!../work/gb.work'
 
-//var firstNum = 0
 var worker
+var timer1 = null
+var timeout1Flag = 0
+
+var timer2 = null
+var timeout2Flag = 0
+
+function startTimer1() {
+  if (timer1) return
+  timer1 = setTimeout(function() {
+    timeout1Flag = 1
+  }, 10000)
+}
+
+function stopTimer1() {
+  if (timer1) {
+    timeout1Flag = 0
+    clearTimeout(timer1)
+    timer1 = null
+  }
+}
+
+function startTimer2() {
+  if (timer2) return
+  timer2 = setTimeout(function() {
+    timeout2Flag = 1
+  }, 10000)
+}
+
+function stopTimer2() {
+  if (timer2) {
+    timeout2Flag = 0
+    clearTimeout(timer2)
+    timer2 = null
+  }
+}
 
 export default {
   name: 'home',
@@ -68,6 +103,7 @@ export default {
     this.loginToken = accountJson.login_token
     this.account = readInfo.account
     this.avatarImage = avatarImage
+
     //获取书架
     this.$get({
       url: '/bookshelf/get_shelf_list',
@@ -126,6 +162,7 @@ export default {
       divisionNum: 0,
       chapterNum: 0,
       dlProgressText: '',
+      timeoutText: '',
       dlButton: '',
       stopButton: '',
       canDl: false,
@@ -244,27 +281,42 @@ export default {
       this.dlName = book.book_info.book_name
       that.chapterNum = 0
       that.dlProgressText = ''
+      that.timeoutText = ''
       this.modal = true
-      //firstNum = 0
+
+      if (timeout1Flag === 1) {
+        stopTimer1()
+        worker.postMessage({
+          cmd: 'stop',
+          loginToken: this.loginToken,
+          account: this.account
+        })
+      }
+
+      if (timeout2Flag === 1) {
+        stopTimer2()
+        window.close()
+      }
+
       //获取书籍 ID
       let bid = book.book_info.book_id
       //获取分卷 ID （全部）
       let divisionData = await this.getDivision(bid)
       this.divisionNum = divisionData.length
       //循环分卷，取出全部章节
-      let allCahpters = []
+      let allChapters = []
       for (var division of divisionData) {
         let divisionID = division.division_id
         let chapters = await this.getChapter(divisionID)
-        allCahpters.push(...chapters)
+        allChapters.push(...chapters)
       }
-      that.chapterNum = allCahpters.length
+      that.chapterNum = allChapters.length
       worker = new GBWorker()
       worker.postMessage({
         cmd: 'begin',
         loginToken: this.loginToken,
         account: this.account,
-        para: allCahpters
+        para: allChapters
       })
       worker.onmessage = function(evt) {
         let msg = evt.data.msg
@@ -273,20 +325,25 @@ export default {
           case 'chapter_complete':
             {
               that.dlButton = '获取中'
-              // if (firstNum === 1) {
-              //   firstNum = 0
-              //   worker.chapterNum++
-              // }
+              stopTimer1()
+              if (content > that.chapterNum / 2) {
+                startTimer1()
+              }
+              stopTimer2()
               that.dlProgressText = `${content}/${that.chapterNum}`
+              that.timeoutText = `${timeout1Flag}`
             }
             break
           case 'all_complete':
+            stopTimer1()
             var blob = new Blob([content])
             that.dlUrl = URL.createObjectURL(blob)
             that.canDl = true
             that.dlButton = '下载到本地'
             that.dlBook()
             worker.terminate()
+            startTimer2()
+            that.timeoutText = `${timeout2Flag}`
             break
         }
       }
@@ -318,7 +375,7 @@ export default {
         para: params
       }).then(res => {
         let chaptersData = res.chapter_list.map(l => {
-          if (l['is_valid'] == '1') {
+          if (l['is_valid'] === '1') {
             return l
           }
         })
@@ -336,7 +393,6 @@ export default {
       document.body.removeChild(eleLink)
     },
     stopBook() {
-      //firstNum = 1
       worker.postMessage({
         cmd: 'stop',
         loginToken: this.loginToken,
