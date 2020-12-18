@@ -9,7 +9,7 @@
         </div>
       </div>
       <div slot="footer">
-        <p>{{ timeoutText }}</p>
+        <p> {{ second }} 秒 </p>
         <at-button type="primary" :disabled="!canDl" @click="dlBook">{{ dlButton }}</at-button>
         <at-button type="primary" :disabled="canDl" @click="stopBook">{{ stopButton }}</at-button>
       </div>
@@ -49,41 +49,6 @@
 import GBWorker from 'worker-loader!../work/gb.work'
 
 var worker
-var timer1 = null
-var timeout1Flag = 0
-
-var timer2 = null
-var timeout2Flag = 0
-
-function startTimer1() {
-  if (timer1) return
-  timer1 = setTimeout(function() {
-    timeout1Flag = 1
-  }, 10000)
-}
-
-function stopTimer1() {
-  if (timer1) {
-    timeout1Flag = 0
-    clearTimeout(timer1)
-    timer1 = null
-  }
-}
-
-function startTimer2() {
-  if (timer2) return
-  timer2 = setTimeout(function() {
-    timeout2Flag = 1
-  }, 10000)
-}
-
-function stopTimer2() {
-  if (timer2) {
-    timeout2Flag = 0
-    clearTimeout(timer2)
-    timer2 = null
-  }
-}
 
 export default {
   name: 'home',
@@ -167,6 +132,9 @@ export default {
       stopButton: '',
       canDl: false,
       dlUrl: '',
+      timer1: null,
+      timer2: null,
+      second: 10,
       columns: [
         {
           title: '书名',
@@ -248,7 +216,7 @@ export default {
           para: {
             login_token: this.loginToken,
             account: this.account,
-            count: 999,
+            count: 9999,
             shelf_id: this.currentShelf['shelf_id'],
             page: 0,
             order: 'last_read_time'
@@ -284,18 +252,56 @@ export default {
       that.timeoutText = ''
       this.modal = true
 
-      if (timeout1Flag === 1) {
-        stopTimer1()
-        worker.postMessage({
-          cmd: 'stop',
-          loginToken: this.loginToken,
-          account: this.account
-        })
+      function startTimer1() {
+        if (that.timer1 !== null) return
+        console.log('startTimer1')
+        that.timer1 = window.setInterval(() => {
+          --that.second
+          if (that.second === 0) {
+            that.second = 10
+            window.clearInterval(that.timer1)
+            that.timer1 = null
+            console.log('to be Timer1')
+            worker.postMessage({
+              cmd: 'stop',
+              loginToken: that.loginToken,
+              account: that.account
+            })
+          }
+        }, 1000)
       }
 
-      if (timeout2Flag === 1) {
-        stopTimer2()
-        window.close()
+      function stopTimer1() {
+        if (that.timer1 !== null) {
+          console.log('stopTimer1')
+          that.second = 10
+          window.clearInterval(that.timer1)
+          that.timer1 = null
+        }
+      }
+
+      function startTimer2() {
+        if (that.timer2 !== null) return
+        console.log('startTimer2')
+        that.timer2 = window.setInterval(() => {
+          --that.second
+          if (that.second === 0) {
+            that.second = 10
+            window.clearInterval(that.timer2)
+            that.timer2 = null
+            console.log('to be Timer2')
+            that.modal = false
+          }
+        }, 1000)
+      }
+
+      function stopTimer2() {
+        if (that.timer2 !== null) {
+          console.log('stopTimer2')
+          that.second = 10
+          window.clearInterval(that.timer2)
+          that.timer2 = null
+        }
       }
 
       //获取书籍 ID
@@ -326,24 +332,22 @@ export default {
             {
               that.dlButton = '获取中'
               stopTimer1()
+              stopTimer2()
               if (content > that.chapterNum / 2) {
                 startTimer1()
               }
-              stopTimer2()
               that.dlProgressText = `${content}/${that.chapterNum}`
-              that.timeoutText = `${timeout1Flag}`
             }
             break
           case 'all_complete':
             stopTimer1()
+            startTimer2()
             var blob = new Blob([content])
             that.dlUrl = URL.createObjectURL(blob)
             that.canDl = true
             that.dlButton = '下载到本地'
             that.dlBook()
             worker.terminate()
-            startTimer2()
-            that.timeoutText = `${timeout2Flag}`
             break
         }
       }
