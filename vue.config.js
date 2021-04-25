@@ -7,6 +7,7 @@ module.exports = {
     port: 8089,
     proxy: {
       '/api': {
+        //target: 'https://www.ciweimao.com', //目标主机
         target: 'https://app.hbooker.com', //目标主机
         changeOrigin: true, //是否跨域 默认true
         ws: true, //代理的WebSockets 默认true

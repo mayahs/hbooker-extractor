@@ -15,6 +15,7 @@ app.use(async (ctx, next) => {
     ctx.respond = false
     await k2c(
       httpProxy({
+        //target: 'https://www.ciweimao.com',
         target: 'https://app.hbooker.com',
         changeOrigin: true,
         secure: false,

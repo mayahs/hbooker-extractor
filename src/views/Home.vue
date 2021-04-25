@@ -28,6 +28,7 @@
             <i class="icon icon-chevron-down"></i>
           </span>
           <at-dropdown-menu slot="menu" class="shelf-menu">
+            <at-button type="primary" @click="dlAllBook">一键下载</at-button>
             <at-dropdown-item v-for="(shelf, index) in shelves" :key="shelf['shelf_id']" :name="index">
               {{ shelf['shelf_name'] }}
             </at-dropdown-item>
@@ -36,7 +37,11 @@
       </div>
     </div>
     <div class="table-wrapper" v-if="!isLoading">
-      <at-table :columns="columns" :data="booksData" stripe></at-table>
+      <at-table :columns="columns" :data="booksData" stripe>
+        <at-checkbox-group v-model="checkboxValue4">
+    
+        </at-checkbox-group>
+      </at-table>
     </div>
     <div class="loading" v-else>
       加载中……
@@ -72,6 +77,7 @@ export default {
     //获取书架
     this.$get({
       url: '/bookshelf/get_shelf_list',
+      //url: 'https://www.ciweimao.com/bookshelf/get_shelf_list',
       para: {
         login_token: this.loginToken,
         account: this.account
@@ -134,8 +140,12 @@ export default {
       dlUrl: '',
       timer1: null,
       timer2: null,
-      second: 10,
+      second: 5,
       columns: [
+        {
+          title: '选择',
+          key: 'checkbox'
+        },
         {
           title: '书名',
           key: 'name'
@@ -402,6 +412,16 @@ export default {
         loginToken: this.loginToken,
         account: this.account
       })
+    },
+    //下载所有选择的内容
+    dlAllBook() {
+      var eleLink = document.createElement('a')
+      eleLink.download = this.dlName + '.txt'
+      eleLink.style.display = 'none'
+      eleLink.href = this.dlUrl
+      document.body.appendChild(eleLink)
+      eleLink.click()
+      document.body.removeChild(eleLink)
     }
   }
 }
