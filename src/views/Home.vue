@@ -18,6 +18,22 @@
       <div class="title" @click="goGit">
         HBooker Extractor
       </div>
+
+      <div class="nav-download">
+            <at-button type="primary" @click="dlAllBook">一键下载</at-button>
+            <i class="icon icon-arrow-right"></i>
+            <at-input v-model="start_index" @input="setStartIndex($event.target)">
+              <template slot="prepend">
+              <span>开始序号</span>
+              </template>
+            </at-input>
+            <at-input v-model="end_index" @input="setEndIndex($event.target)">
+              <template slot="prepend">
+              <span>结束序号</span>
+              </template>
+            </at-input>
+      </div>
+
       <div class="need-login" v-if="!readInfo['reader_name']">
         未登录
       </div>
@@ -26,9 +42,9 @@
           <span>
             {{ currentShelf['shelf_name'] }}
             <i class="icon icon-chevron-down"></i>
+
           </span>
           <at-dropdown-menu slot="menu" class="shelf-menu">
-            <at-button type="primary" @click="dlAllBook">一键下载</at-button>
             <at-dropdown-item v-for="(shelf, index) in shelves" :key="shelf['shelf_id']" :name="index">
               {{ shelf['shelf_name'] }}
             </at-dropdown-item>
@@ -38,9 +54,9 @@
     </div>
     <div class="table-wrapper" v-if="!isLoading">
       <at-table :columns="columns" :data="booksData" stripe>
-        <at-checkbox-group v-model="checkboxValue4">
-    
-        </at-checkbox-group>
+        <!-- <at-checkbox-group v-model="checkboxValue4">
+
+        </at-checkbox-group> -->
       </at-table>
     </div>
     <div class="loading" v-else>
@@ -96,20 +112,30 @@ export default {
         para: {
           login_token: this.loginToken,
           account: this.account,
-          count: 9999,
+          count: 99999,
           shelf_id: shelfId,
           page: 0,
-          order: 'last_read_time'
+          order: 'last_read_time',
+          //sort:'read'
         }
       }).then(res => {
         let books = res.book_list
-        this.books = books
+        var data = books.sort(function(a, b) {  
+                      var x = a.book_info.uptime.replace(/:/g, "").replace(/-/g, "").replace(" ", "")
+                      var y = b.book_info.uptime.replace(/:/g, "").replace(/-/g, "").replace(" ", "")
+                      return ((x>y)?-1:((x<y)?1:0));
+                    });
+
+        this.books = data //books
         let arr = []
+        var book_index = 0
         books.forEach(book => {
+          book_index++
           let obj = {
             name: book.book_info.book_name,
             author: book.book_info.author_name,
-            date: book.book_info.last_chapter_info.uptime
+            date: book.book_info.last_chapter_info.uptime,
+            index: book_index
           }
           arr.push(obj)
         })
@@ -117,6 +143,8 @@ export default {
         this.$nextTick(() => {
           this.isLoading = false
         })
+        this.start_index = 0
+        this.end_index = book_index
       })
     })
   },
@@ -141,11 +169,17 @@ export default {
       timer1: null,
       timer2: null,
       second: 5,
+      start_index: 0,
+      end_index :0,
       columns: [
         {
-          title: '选择',
-          key: 'checkbox'
+          title: '序号',
+          key: 'index'
         },
+        // {
+        //   title: '选择',
+        //   key: 'checkbox'
+        // },
         {
           title: '书名',
           key: 'name'
@@ -226,20 +260,30 @@ export default {
           para: {
             login_token: this.loginToken,
             account: this.account,
-            count: 9999,
+            count: 99999,
             shelf_id: this.currentShelf['shelf_id'],
             page: 0,
             order: 'last_read_time'
           }
         }).then(res => {
           let books = res.book_list
-          this.books = books
+
+          var data = books.sort(function(a, b) {  
+                      var x = a.book_info.uptime.replace(/:/g, "").replace(/-/g, "").replace(" ", "")
+                      var y = b.book_info.uptime.replace(/:/g, "").replace(/-/g, "").replace(" ", "")
+                      return ((x>y)?-1:((x<y)?1:0));
+                    });
+
+          this.books = data
           let arr = []
+          var book_index = 0
           books.forEach(book => {
+            book_index++
             let obj = {
               name: book.book_info.book_name,
               author: book.book_info.author_name,
-              date: book.book_info.last_chapter_info.uptime
+              date: book.book_info.last_chapter_info.uptime,
+              index: book_index
             }
             arr.push(obj)
           })
@@ -247,6 +291,8 @@ export default {
           this.$nextTick(() => {
             this.isLoading = false
           })
+          this.start_index = 0
+          this.end_index = book_index
         })
       }
     },
@@ -422,6 +468,20 @@ export default {
       document.body.appendChild(eleLink)
       eleLink.click()
       document.body.removeChild(eleLink)
+    },
+    setStartIndex (target) {
+        // 输入的数据进行初始化，将非数字的替换为空
+        //const val = target.value.toString().replace(/[^0-9]/ig,"")
+        // 重新赋值
+        //this.start_index = v.replace(/(\d{4})(?=\d)/g, '$1 ')
+        this.start_index = target
+    },
+    setEndIndex (target) {
+        // 输入的数据进行初始化，将非数字的替换为空
+        //const val = target.value.toString().replace(/[^0-9]/ig,"")
+        // 重新赋值
+        //this.start_index = v.replace(/(\d{4})(?=\d)/g, '$1 ')
+        this.end_index = target
     }
   }
 }
@@ -449,6 +509,11 @@ export default {
     .title{
       cursor pointer
     }
+  }
+  .nav-download{
+    display flex
+    flex-wrap nowrap
+    justify-content space-between
   }
   .no-books{
     padding-top 120px
