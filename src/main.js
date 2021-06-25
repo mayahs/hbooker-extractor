@@ -4,6 +4,7 @@ import router from './router'
 import './plugins/at'
 import installHttp from './plugins/http'
 import decrypt from './plugins/decrypt'
+import axios from './plugins/axios'
 
 Vue.config.productionTip = false
 Vue.prototype.$get = installHttp.get

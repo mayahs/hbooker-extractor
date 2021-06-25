@@ -9,6 +9,7 @@
         </div>
       </div>
       <div slot="footer">
+        <at-button type="primary" :disabled="!canDlAll" @click="stopDlAllBook">一键取消</at-button>
         <p> {{ second }} 秒 </p>
         <at-button type="primary" :disabled="!canDl" @click="dlBook">{{ dlButton }}</at-button>
         <at-button type="primary" :disabled="canDl" @click="stopBook">{{ stopButton }}</at-button>
@@ -20,14 +21,17 @@
       </div>
 
       <div class="nav-download">
-            <at-button type="primary" @click="dlAllBook">一键下载</at-button>
+            <p>{{indexFlag}}</p>
+            <at-button type="primary" :disabled="canDlAll" @click="dlAllBook">一键下载</at-button>
+            <i class="icon icon-arrow-left"></i>
+            <p> {{ currentIndex }} </p>
             <i class="icon icon-arrow-right"></i>
-            <at-input v-model="start_index" @input="setStartIndex($event.target)">
+            <at-input v-model="startIndex">
               <template slot="prepend">
               <span>开始序号</span>
               </template>
             </at-input>
-            <at-input v-model="end_index" @input="setEndIndex($event.target)">
+            <at-input v-model="endIndex">
               <template slot="prepend">
               <span>结束序号</span>
               </template>
@@ -130,21 +134,21 @@ export default {
         let arr = []
         var book_index = 0
         books.forEach(book => {
-          book_index++
           let obj = {
             name: book.book_info.book_name,
             author: book.book_info.author_name,
             date: book.book_info.last_chapter_info.uptime,
-            index: book_index
+            shelfIndex: book_index
           }
           arr.push(obj)
+          book_index++
         })
         this.booksData = arr
         this.$nextTick(() => {
           this.isLoading = false
         })
-        this.start_index = 0
-        this.end_index = book_index
+        this.startIndex = 0
+        this.endIndex = book_index - 1
       })
     })
   },
@@ -165,16 +169,21 @@ export default {
       dlButton: '',
       stopButton: '',
       canDl: false,
+      canDlAll: false,
       dlUrl: '',
       timer1: null,
       timer2: null,
+      timer3: null,
+      timer4: null,
       second: 5,
-      start_index: 0,
-      end_index :0,
+      currentIndex: 0,
+      startIndex: 0,
+      endIndex: 0,
+      indexFlag: 0,
       columns: [
         {
           title: '序号',
-          key: 'index'
+          key: 'shelfIndex'
         },
         // {
         //   title: '选择',
@@ -278,21 +287,21 @@ export default {
           let arr = []
           var book_index = 0
           books.forEach(book => {
-            book_index++
             let obj = {
               name: book.book_info.book_name,
               author: book.book_info.author_name,
               date: book.book_info.last_chapter_info.uptime,
-              index: book_index
+              shelfIndex: book_index
             }
             arr.push(obj)
+            book_index++
           })
           this.booksData = arr
           this.$nextTick(() => {
             this.isLoading = false
           })
-          this.start_index = 0
-          this.end_index = book_index
+          this.startIndex = 0
+          this.endIndex = book_index - 1
         })
       }
     },
@@ -307,6 +316,7 @@ export default {
       that.dlProgressText = ''
       that.timeoutText = ''
       this.modal = true
+      that.indexFlag = 1
 
       function startTimer1() {
         if (that.timer1 !== null) return
@@ -314,10 +324,11 @@ export default {
         that.timer1 = window.setInterval(() => {
           --that.second
           if (that.second === 0) {
-            that.second = 10
+            that.second = 5
             window.clearInterval(that.timer1)
             that.timer1 = null
             console.log('to be Timer1')
+            that.indexFlag = 0
             worker.postMessage({
               cmd: 'stop',
               loginToken: that.loginToken,
@@ -330,7 +341,7 @@ export default {
       function stopTimer1() {
         if (that.timer1 !== null) {
           console.log('stopTimer1')
-          that.second = 10
+          that.second = 5
           window.clearInterval(that.timer1)
           that.timer1 = null
         }
@@ -342,11 +353,12 @@ export default {
         that.timer2 = window.setInterval(() => {
           --that.second
           if (that.second === 0) {
-            that.second = 10
+            that.second = 5
             window.clearInterval(that.timer2)
             that.timer2 = null
             console.log('to be Timer2')
             that.modal = false
+            that.indexFlag = 0
           }
         }, 1000)
       }
@@ -354,32 +366,48 @@ export default {
       function stopTimer2() {
         if (that.timer2 !== null) {
           console.log('stopTimer2')
-          that.second = 10
+          that.second = 5
           window.clearInterval(that.timer2)
           that.timer2 = null
         }
       }
 
-      //获取书籍 ID
-      let bid = book.book_info.book_id
-      //获取分卷 ID （全部）
-      let divisionData = await this.getDivision(bid)
-      this.divisionNum = divisionData.length
-      //循环分卷，取出全部章节
-      let allChapters = []
-      for (var division of divisionData) {
-        let divisionID = division.division_id
-        let chapters = await this.getChapter(divisionID)
-        allChapters.push(...chapters)
+      try {
+        //获取书籍 ID
+        let bid = book.book_info.book_id
+        //获取分卷 ID （全部）
+        let divisionData = await this.getDivision(bid)
+        this.divisionNum = divisionData.length
+        //循环分卷，取出全部章节
+        let allChapters = []
+        for (var division of divisionData) {
+          let divisionID = division.division_id
+          let chapters = await this.getChapter(divisionID)
+          allChapters.push(...chapters)
+        }
+        that.chapterNum = allChapters.length
+        worker = new GBWorker()
+        worker.postMessage({
+          cmd: 'begin',
+          loginToken: this.loginToken,
+          account: this.account,
+          para: allChapters
+        })
       }
-      that.chapterNum = allChapters.length
-      worker = new GBWorker()
-      worker.postMessage({
-        cmd: 'begin',
-        loginToken: this.loginToken,
-        account: this.account,
-        para: allChapters
-      })
+      catch (e) 
+      {
+        // 错误处理代码片段
+        console.log(e)
+        //stopBook()
+        this.indexFlag = 0
+        self.postMessage({ msg: 'stop_complete', content: book })
+        this.modal = false
+        // worker.postMessage({
+        //   cmd: 'stop',
+        //   loginToken: this.loginToken,
+        //   account: this.account
+        // })
+      }
       worker.onmessage = function(evt) {
         let msg = evt.data.msg
         let content = evt.data.content
@@ -405,21 +433,81 @@ export default {
             that.dlBook()
             worker.terminate()
             break
+          case 'stop_complete':
+            stopTimer1()
+            startTimer2()
+            that.canDl = true
+            that.dlButton = '下载到本地'
+            worker.terminate()
+            break
         }
       }
     },
+    // async getDivision(bid) {
+    //   try {
+    //     return await this.$get({
+    //       url: '/book/get_division_list',
+    //       para: {
+    //         login_token: this.loginToken,
+    //         account: this.account,
+    //         book_id: bid
+    //       }
+    //     // }).then(() => {
+    //     //   try {
+    //     //     throw new Error('then');
+    //     //   } catch(e) {
+    //     //     //console.log(res)
+    //     //     //console.log(e.message)
+    //     //     return e;
+    //     //   }
+    //     // }).then(e => console.log(e.message));
+    //     }).then(res => {
+    //       console.log(res)
+    //       let divisionData = res.division_list
+    //       return divisionData
+    //     })
+    //   }
+    //   catch (e) {
+    //     // 错误处理代码片段
+    //     console.error(e)
+    //     //stopBook()
+    //     this.indexFlag = 0
+    //     this.stopTimer1()
+    //     this.stopTimer2()
+    //     this.canDl = true
+    //     this.dlButton = '下载到本地'
+    //     this.worker.terminate()
+    //     this.modal = false
+    //     return e
+    //   }
+    // },
     async getDivision(bid) {
-      return await this.$get({
-        url: '/book/get_division_list',
-        para: {
-          login_token: this.loginToken,
-          account: this.account,
-          book_id: bid
+      try {
+        let division = await this.axios.get({
+          url: '/book/get_division_list',
+          para: {
+            login_token: this.loginToken,
+            account: this.account,
+            book_id: bid
+          }
+        })
+        if (division.data.success) {
+          let divisionData = res.division_list
+          return divisionData
         }
-      }).then(res => {
-        let divisionData = res.division_list
-        return divisionData
-      })
+      }
+      catch (e) {
+        // 错误处理代码片段
+        console.log(e)
+        //stopBook()
+        this.indexFlag = 0
+        this.stopTimer1()
+        this.stopTimer2()
+        this.canDl = true
+        this.dlButton = '下载到本地'
+        this.worker.terminate()
+        this.modal = false
+      }
     },
     async getChapter(did) {
       var params = new URLSearchParams()
@@ -453,6 +541,8 @@ export default {
       document.body.removeChild(eleLink)
     },
     stopBook() {
+      this.indexFlag = 0
+      this.modal = false
       worker.postMessage({
         cmd: 'stop',
         loginToken: this.loginToken,
@@ -461,27 +551,50 @@ export default {
     },
     //下载所有选择的内容
     dlAllBook() {
-      var eleLink = document.createElement('a')
-      eleLink.download = this.dlName + '.txt'
-      eleLink.style.display = 'none'
-      eleLink.href = this.dlUrl
-      document.body.appendChild(eleLink)
-      eleLink.click()
-      document.body.removeChild(eleLink)
+      var indexNum = 0
+      this.currentIndex = this.startIndex
+      this.indexFlag = 0
+      if (this.endIndex > this.startIndex)
+      {
+        indexNum = this.endIndex - this.startIndex + 1
+      }
+      else
+      {
+        indexNum = 0
+      }
+      window.clearInterval(this.timer4)
+      window.clearTimeout(this.timer3); //清除延迟执行
+      this.canDlAll = true
+      this.timer3 = window.setTimeout(()=>{ //设置延迟执行
+        this.timer4 = window.setInterval(() => {
+            if (this.indexFlag == 0)
+            {
+              this.clickBook(this.books[this.currentIndex])
+              this.currentIndex++
+            }
+            if (this.currentIndex > indexNum)
+            {
+              this.canDlAll = false
+              this.indexFlag = 0
+              this.currentIndex--
+              window.clearInterval(this.timer4)
+              window.clearTimeout(this.timer3); //清除延迟执行
+            }
+        }, 1000)
+      },2000);    //延时的2000，必须大于循环的1000
     },
-    setStartIndex (target) {
-        // 输入的数据进行初始化，将非数字的替换为空
-        //const val = target.value.toString().replace(/[^0-9]/ig,"")
-        // 重新赋值
-        //this.start_index = v.replace(/(\d{4})(?=\d)/g, '$1 ')
-        this.start_index = target
-    },
-    setEndIndex (target) {
-        // 输入的数据进行初始化，将非数字的替换为空
-        //const val = target.value.toString().replace(/[^0-9]/ig,"")
-        // 重新赋值
-        //this.start_index = v.replace(/(\d{4})(?=\d)/g, '$1 ')
-        this.end_index = target
+    stopDlAllBook() {
+      var indexNum = 0
+      if (this.endIndex > this.startIndex)
+      {
+        indexNum = this.endIndex - this.startIndex + 1
+      }
+      else
+      {
+        indexNum = 0
+      }
+      this.currentIndex = indexNum + 1
+      this.canDlAll = false
     }
   }
 }
