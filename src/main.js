@@ -10,6 +10,7 @@ Vue.config.productionTip = false
 Vue.prototype.$get = installHttp.get
 Vue.prototype.$post = installHttp.post
 Vue.prototype.$dcy = decrypt
+Vue.prototype.$axios = axios
 
 new Vue({
   router,

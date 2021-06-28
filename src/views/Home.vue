@@ -161,6 +161,9 @@ export default {
       shelfs: [],
       books: [],
       dlName: '',
+      dlAuthor: '',
+      dlWord: '',
+      dlUptime: '',
       dlprogress: '',
       divisionNum: 0,
       chapterNum: 0,
@@ -175,7 +178,7 @@ export default {
       timer2: null,
       timer3: null,
       timer4: null,
-      second: 5,
+      second: 10,
       currentIndex: 0,
       startIndex: 0,
       endIndex: 0,
@@ -312,6 +315,9 @@ export default {
       that.stopButton = '停止'
       this.chapterNum = 0
       this.dlName = book.book_info.book_name
+      this.dlAuthor = book.book_info.author_name
+      this.dlWord = book.book_info.total_word_count
+      this.dlUptime = book.book_info.uptime
       that.chapterNum = 0
       that.dlProgressText = ''
       that.timeoutText = ''
@@ -320,15 +326,19 @@ export default {
 
       function startTimer1() {
         if (that.timer1 !== null) return
-        console.log('startTimer1')
+        //console.log('startTimer1')
         that.timer1 = window.setInterval(() => {
           --that.second
           if (that.second === 0) {
-            that.second = 5
+            that.second = 10
             window.clearInterval(that.timer1)
+            window.clearInterval(that.timer2)
             that.timer1 = null
             console.log('to be Timer1')
-            that.indexFlag = 0
+            // that.timer3 = window.setTimeout(() => { //设置延迟执行
+            //   that.indexFlag = 0
+            //   window.clearTimeout(that.timer3);
+            // }, 1000)
             worker.postMessage({
               cmd: 'stop',
               loginToken: that.loginToken,
@@ -340,8 +350,8 @@ export default {
 
       function stopTimer1() {
         if (that.timer1 !== null) {
-          console.log('stopTimer1')
-          that.second = 5
+          //console.log('stopTimer1')
+          that.second = 10
           window.clearInterval(that.timer1)
           that.timer1 = null
         }
@@ -353,12 +363,16 @@ export default {
         that.timer2 = window.setInterval(() => {
           --that.second
           if (that.second === 0) {
-            that.second = 5
+            that.second = 10
+            window.clearInterval(that.timer1)
             window.clearInterval(that.timer2)
             that.timer2 = null
             console.log('to be Timer2')
             that.modal = false
-            that.indexFlag = 0
+            that.timer3 = window.setTimeout(() => { //设置延迟执行
+              that.indexFlag = 0
+              window.clearTimeout(that.timer3);
+            }, 1000)
           }
         }, 1000)
       }
@@ -366,7 +380,7 @@ export default {
       function stopTimer2() {
         if (that.timer2 !== null) {
           console.log('stopTimer2')
-          that.second = 5
+          that.second = 10
           window.clearInterval(that.timer2)
           that.timer2 = null
         }
@@ -397,16 +411,11 @@ export default {
       catch (e) 
       {
         // 错误处理代码片段
-        console.log(e)
+        console.log('下载错误：' + e)
         //stopBook()
-        this.indexFlag = 0
-        self.postMessage({ msg: 'stop_complete', content: book })
-        this.modal = false
-        // worker.postMessage({
-        //   cmd: 'stop',
-        //   loginToken: this.loginToken,
-        //   account: this.account
-        // })
+        //this.indexFlag = 0
+        //self.postMessage({ msg: 'stop_complete', content: book })
+        //this.modal = false
       }
       worker.onmessage = function(evt) {
         let msg = evt.data.msg
@@ -433,72 +442,34 @@ export default {
             that.dlBook()
             worker.terminate()
             break
-          case 'stop_complete':
-            stopTimer1()
-            startTimer2()
-            that.canDl = true
-            that.dlButton = '下载到本地'
-            worker.terminate()
-            break
+          // case 'stop_complete':
+          //   stopTimer1()
+          //   startTimer2()
+          //   that.canDl = true
+          //   that.dlButton = '下载到本地'
+          //   worker.terminate()
+          //   break
         }
       }
     },
-    // async getDivision(bid) {
-    //   try {
-    //     return await this.$get({
-    //       url: '/book/get_division_list',
-    //       para: {
-    //         login_token: this.loginToken,
-    //         account: this.account,
-    //         book_id: bid
-    //       }
-    //     // }).then(() => {
-    //     //   try {
-    //     //     throw new Error('then');
-    //     //   } catch(e) {
-    //     //     //console.log(res)
-    //     //     //console.log(e.message)
-    //     //     return e;
-    //     //   }
-    //     // }).then(e => console.log(e.message));
-    //     }).then(res => {
-    //       console.log(res)
-    //       let divisionData = res.division_list
-    //       return divisionData
-    //     })
-    //   }
-    //   catch (e) {
-    //     // 错误处理代码片段
-    //     console.error(e)
-    //     //stopBook()
-    //     this.indexFlag = 0
-    //     this.stopTimer1()
-    //     this.stopTimer2()
-    //     this.canDl = true
-    //     this.dlButton = '下载到本地'
-    //     this.worker.terminate()
-    //     this.modal = false
-    //     return e
-    //   }
-    // },
     async getDivision(bid) {
       try {
-        let division = await this.axios.get({
+        return await this.$get({
           url: '/book/get_division_list',
           para: {
             login_token: this.loginToken,
             account: this.account,
             book_id: bid
           }
-        })
-        if (division.data.success) {
+        }).then(res => {
+          console.log(res)
           let divisionData = res.division_list
           return divisionData
-        }
+        })
       }
       catch (e) {
         // 错误处理代码片段
-        console.log(e)
+        console.error(e)
         //stopBook()
         this.indexFlag = 0
         this.stopTimer1()
@@ -533,7 +504,7 @@ export default {
     },
     dlBook() {
       var eleLink = document.createElement('a')
-      eleLink.download = this.dlName + '.txt'
+      eleLink.download = this.dlName + '_' + this.dlAuthor + '_' + this.dlWord + '_' + this.dlUptime + '.txt'
       eleLink.style.display = 'none'
       eleLink.href = this.dlUrl
       document.body.appendChild(eleLink)
@@ -547,53 +518,37 @@ export default {
         cmd: 'stop',
         loginToken: this.loginToken,
         account: this.account
-      })
-    },
+      })    },
     //下载所有选择的内容
-    dlAllBook() {
-      var indexNum = 0
-      this.currentIndex = this.startIndex
+      dlAllBook() {
+      this.currentIndex = parseInt(this.startIndex)
       this.indexFlag = 0
-      if (this.endIndex > this.startIndex)
-      {
-        indexNum = this.endIndex - this.startIndex + 1
-      }
-      else
-      {
-        indexNum = 0
-      }
       window.clearInterval(this.timer4)
       window.clearTimeout(this.timer3); //清除延迟执行
       this.canDlAll = true
-      this.timer3 = window.setTimeout(()=>{ //设置延迟执行
-        this.timer4 = window.setInterval(() => {
-            if (this.indexFlag == 0)
-            {
-              this.clickBook(this.books[this.currentIndex])
-              this.currentIndex++
-            }
-            if (this.currentIndex > indexNum)
-            {
-              this.canDlAll = false
-              this.indexFlag = 0
-              this.currentIndex--
-              window.clearInterval(this.timer4)
-              window.clearTimeout(this.timer3); //清除延迟执行
-            }
-        }, 1000)
-      },2000);    //延时的2000，必须大于循环的1000
+      this.timer4 = window.setInterval(() => {//循环
+        //this.timer3 = window.setTimeout(() => { //设置延迟执行
+        if (this.indexFlag == 0)
+        {
+          if (this.timer1 != null) window.clearInterval(this.timer1)
+          if (this.timer2 != null) window.clearInterval(this.timer2)
+          this.clickBook(this.books[this.currentIndex])
+          this.currentIndex++
+        }
+        if (this.currentIndex >= (parseInt(this.endIndex) + 1))
+        {
+          this.canDlAll = false
+          this.indexFlag = 0
+          window.clearInterval(this.timer4)
+          window.clearTimeout(this.timer3); //清除延迟执行
+        }
+        //}, 3000)
+      }, 5000);    //延时的2000，必须大于循环的1000，并且必须小于second秒时间
     },
     stopDlAllBook() {
       var indexNum = 0
-      if (this.endIndex > this.startIndex)
-      {
-        indexNum = this.endIndex - this.startIndex + 1
-      }
-      else
-      {
-        indexNum = 0
-      }
-      this.currentIndex = indexNum + 1
+      indexNum = parseInt(this.endIndex) + 1
+      this.currentIndex = indexNum
       this.canDlAll = false
     }
   }

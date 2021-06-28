@@ -1,9 +1,10 @@
-import axios from 'axios'
+//import axios from 'axios'
+import axios from '../plugins/axios'
 
 const mixin = {
   baseUrl: '/api', //url前缀
   standardFlag: true,
-  timeout: 15000,
+  timeout: 30000,
   withCredentials: false //跨域请求是否使用凭证
 }
 
@@ -53,6 +54,8 @@ axios.interceptors.response.use(
           error.message = 'HTTP版本不受支持'
           break
         default:
+          error.message = '其他'
+          break
       }
     }
     return Promise.reject(error)
@@ -79,16 +82,23 @@ function get(options, final) {
           case 200100:
             this.$router.push('/login')
             break
+          case 320001:
+            this.$Notify.error({
+              title: '错误4编号',
+              message: json.tip
+            })
+            reject(json)
+            break
           default:
             this.$Notify.error({
-              title: '错误',
+              title: '错误0编号',
               message: json.tip
             })
         }
       })
       .catch(err => {
         this.$Notify.error({
-          title: '错误',
+          title: '错误1编号',
           message: err.message
         })
         reject(err)
@@ -121,14 +131,15 @@ function post(obj, final) {
               break
             default:
               this.$Notify.error({
-                title: '错误',
+                title: '错误2编号',
                 message: json.tip
               })
+              //reject(json)
           }
         },
         err => {
           this.$Notify.error({
-            title: '错误',
+            title: '错误3编号',
             message: err.message
           })
           reject(err)
