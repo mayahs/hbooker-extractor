@@ -21,11 +21,10 @@
       </div>
 
       <div class="nav-download">
-            <p>{{indexFlag}}</p>
+            <p> {{indexTips}} </p>
+            <i class="icon icon-arrow-right"></i>
             <at-button type="primary" :disabled="canDlAll" @click="dlAllBook">一键下载</at-button>
             <i class="icon icon-arrow-left"></i>
-            <p> {{ currentIndex }} </p>
-            <i class="icon icon-arrow-right"></i>
             <at-input v-model="startIndex">
               <template slot="prepend">
               <span>开始序号</span>
@@ -180,6 +179,8 @@ export default {
       timer4: null,
       second: 10,
       currentIndex: 0,
+      indexTips: "点击一键下载",
+      currentTips: 0,
       startIndex: 0,
       endIndex: 0,
       indexFlag: 0,
@@ -426,7 +427,7 @@ export default {
               that.dlButton = '获取中'
               stopTimer1()
               stopTimer2()
-              if (content > that.chapterNum / 2) {
+              if (content > that.chapterNum / 3) {
                 startTimer1()
               }
               that.dlProgressText = `${content}/${that.chapterNum}`
@@ -532,11 +533,13 @@ export default {
         {
           if (this.timer1 != null) window.clearInterval(this.timer1)
           if (this.timer2 != null) window.clearInterval(this.timer2)
+          this.indexTips = '当前序号' + this.currentIndex
           this.clickBook(this.books[this.currentIndex])
           this.currentIndex++
         }
         if (this.currentIndex >= (parseInt(this.endIndex) + 1))
         {
+          this.indexTips = '完成序号' + (this.currentIndex - 1)
           this.canDlAll = false
           this.indexFlag = 0
           window.clearInterval(this.timer4)
@@ -546,10 +549,15 @@ export default {
       }, 5000);    //延时的2000，必须大于循环的1000，并且必须小于second秒时间
     },
     stopDlAllBook() {
-      var indexNum = 0
-      indexNum = parseInt(this.endIndex) + 1
-      this.currentIndex = indexNum
+      // var indexNum = 0
+      // indexNum = parseInt(this.endIndex) + 1
+      // this.currentIndex = indexNum
+      // this.canDlAll = false
+      this.indexTips = '取消序号' + (this.currentIndex - 1)
       this.canDlAll = false
+      this.indexFlag = 0
+      window.clearInterval(this.timer4)
+      window.clearTimeout(this.timer3); //清除延迟执行
     }
   }
 }
