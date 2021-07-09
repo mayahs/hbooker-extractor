@@ -51,19 +51,33 @@ self.addEventListener('message', async event => {
 
 var getChapter = async function(chapter, i, length) {
   try {
-    let key = await getChapterKey(chapter.chapter_id)
-    let content = await getChapterContent(chapter.chapter_id, key)
-    let chapterInfo = content.chapter_info
-    if (Object.keys(chapterInfo).length != 0) {
-      let contentTitle = chapterInfo.chapter_title
-      let contentText = chapterInfo.txt_content
-      let decryptContent = decrypt(contentText, key)
-      bookOutOfOrder[i] = contentTitle + '\n' + decryptContent + '\n\n\n'
-    } else {
-      //throw new Error('Failed to get chapter info')
+    if ((chapter.is_valid !== 0) && (chapter.auth_access !== 0))
+    {
+      let key = await getChapterKey(chapter.chapter_id)
+      let content = await getChapterContent(chapter.chapter_id, key)
+      let chapterInfo = content.chapter_info
+      if (Object.keys(chapterInfo).length != 0) {
+        let contentTitle = chapterInfo.chapter_title
+        let contentText = chapterInfo.txt_content
+        let decryptContent = decrypt(contentText, key)
+        bookOutOfOrder[i] = contentTitle + '\n' + decryptContent + '\n\n\n'
+      } else {
+        //throw new Error('Failed to get chapter info')
+      }
+    }
+    else
+    {
+      if (chapter.auth_access === 0)
+      {
+        bookOutOfOrder[i] = '\n' + chapter.chapter_title + ' 章节未付费\n\n'
+      }
+      else if (chapter.is_valid === 0)
+      {
+        bookOutOfOrder[i] = '\n' + chapter.chapter_title + ' 章节被屏蔽\n\n'
+      }
     }
   } catch (e) {
-    bookOutOfOrder[i] = '\n章节读取失败\n\n\n'
+    bookOutOfOrder[i] = '\n章节读取失败\n\n'
     console.error(e + ' download failed:' + chapterNum + '\n')
     // if (firstNum === 0) {
     //   firstNum = 1

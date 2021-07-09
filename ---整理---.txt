@@ -1,0 +1,33 @@
+
+
+1.后面的书架
+2.一键下载的提示，序号应该减一显示
+3.被屏蔽章节，返回错误
+4.识别vip章节是否订阅
+
+
+
+
+
+
+
+
+1.我，加藤惠
+
+
+
+
+{'chapter_id': '103334795', 'chapter_index': '1', 'chapter_title': '第1章 究极生物', 'word_count': '2334', 'tsukkomi_amount': '1278', 'is_paid': '0', 'mtime': '2019-07-01 09:00:02', 'is_valid': '1', 'auth_access': '1'}
+
+'is_valid':为0表示被屏蔽，为1表示没有屏蔽
+'auth_access':为0表示没有权限不能看，比如说vip未付费，为1表示可看
+'is_paid':表示是否为付费章节，为0表示非付费章节，为1表示付费章节
+
+{chapter_id: '107188692', chapter_index: '1', chapter_title: '第一章 开幕雷击', word_count: '2153', tsukkomi_amount: '349', …}
+
+
+
+
+
+
+

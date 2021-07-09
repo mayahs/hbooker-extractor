@@ -352,7 +352,7 @@ export default {
       function stopTimer1() {
         if (that.timer1 !== null) {
           //console.log('stopTimer1')
-          that.second = 10
+          that.second = 30
           window.clearInterval(that.timer1)
           that.timer1 = null
         }
@@ -427,7 +427,8 @@ export default {
               that.dlButton = '获取中'
               stopTimer1()
               stopTimer2()
-              if (content > that.chapterNum / 3) {
+              if (content > (that.chapterNum * 4 / 5)) {
+                that.second = 30
                 startTimer1()
               }
               that.dlProgressText = `${content}/${that.chapterNum}`
@@ -435,6 +436,7 @@ export default {
             break
           case 'all_complete':
             stopTimer1()
+            that.second = 10
             startTimer2()
             var blob = new Blob([content])
             that.dlUrl = URL.createObjectURL(blob)
@@ -495,9 +497,9 @@ export default {
         para: params
       }).then(res => {
         let chaptersData = res.chapter_list.map(l => {
-          if (l['is_valid'] === '1') {
+          //if (l['is_valid'] === '1') {
             return l
-          }
+          //}
         })
         console.log(chaptersData)
         return chaptersData
